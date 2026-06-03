@@ -74,25 +74,25 @@ export async function createAccount(formData: FormData) {
 // ĐĂNG KÝ TÀI KHOẢN MỚI
 export async function register(prevState: any, formData: FormData) {
   const name = formData.get('name') as string;
-  const email = formData.get('email') as string;
+  const username = formData.get('username') as string;
   const password = formData.get('password') as string;
 
-  if (!email || !password || !name) {
+  if (!username || !password || !name) {
     return { error: 'Vui lòng điền đầy đủ tất cả các trường.' };
   }
 
   try {
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await prisma.user.findFirst({ where: { username } });
     if (existingUser) {
-      return { error: 'Địa chỉ email này đã được sử dụng.' };
+      return { error: 'Tên người dùng này đã được sử dụng.' };
     }
 
     // Tạo tài khoản mới trong Database
     const newUser = await prisma.user.create({
       data: {
         name,
-        email,
-        passwordHash: password, // Trong môi trường thực tế nên mã hóa bằng bcrypt
+        username,
+        passwordHash: password, 
       }
     });
 
@@ -161,7 +161,7 @@ export async function changePassword(formData: FormData) {
 
 // ĐẶT LẠI MẬT KHẨU (FORGOT PASSWORD)
 export async function resetPassword(prevState: any, formData: FormData) {
-  const email = formData.get('email') as string;
+  const username = formData.get('username') as string;
   const newPassword = formData.get('newPassword') as string;
   const confirmPassword = formData.get('confirmPassword') as string;
 
@@ -170,9 +170,9 @@ export async function resetPassword(prevState: any, formData: FormData) {
   }
 
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ where: { username } });
     if (!user) {
-      return { error: 'Không tìm thấy tài khoản nào sử dụng Email này.' };
+      return { error: 'Không tìm thấy tài khoản nào sử dụng Tên người dùng này.' };
     }
 
     // Cập nhật mật khẩu mới vào Database
