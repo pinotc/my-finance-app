@@ -1,0 +1,180 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+// 1. Quản lý người dùng & Bảo mật
+model User {
+  id            Int            @id @default(autoincrement())
+  name          String
+  username      String         @unique
+  passwordHash  String
+  createdAt     DateTime       @default(now())
+  accounts      Account[]
+  categories    Category[]
+  transactions  Transaction[]
+  investments   Investment[]
+  savings       Saving[]
+  debts         Debt[]
+  budgets       Budget[]
+  goals         FinancialGoal[]
+  recurringTransactions RecurringTransaction[]
+  goldTransactions GoldTransaction[]
+}
+
+// 2. Quản lý tài khoản tiền
+model Account {
+  id          Int           @id @default(autoincrement())
+  userId      Int
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String        // Ví dụ: Tiền mặt, Vietcombank, Momo
+  type        String        // cash, bank, e_wallet, investment
+  balance     Decimal       @default(0.00) @db.Decimal(15, 2)
+  createdAt   DateTime      @default(now())
+  recurringTransactions RecurringTransaction[]
+  // Quan hệ đối ứng cho chức năng chuyển tiền nội bộ
+  transactions        Transaction[] @relation("AccountTransactions")
+  transferToTransactions Transaction[] @relation("TransferAccountTransactions")
+}
+
+// 3. Danh mục thu chi
+model Category {
+  id        Int           @id @default(autoincrement())
+  userId    Int?          // null nếu là danh mục mặc định của hệ thống
+  user      User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String        // Ăn uống, Đi lại, Lương, Đầu tư...
+  type      String        // income, expense
+  icon      String?
+  transactions Transaction[]
+  budgets   Budget[]
+}
+
+// 4. Giao dịch thu chi & Giao dịch định kỳ
+model Transaction {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId       Int
+  account         Account   @relation("AccountTransactions", fields: [accountId], references: [id], onDelete: Cascade)
+  
+  // Phục vụ tính năng chuyển khoản nội bộ giữa các tài khoản
+  toAccountId     Int?
+  toAccount       Account?  @relation("TransferAccountTransactions", fields: [toAccountId], references: [id])
+  
+  categoryId      Int?
+  category        Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  
+  amount          Decimal   @db.Decimal(15, 2)
+  type            String    // income, expense, transfer
+  date            DateTime  @default(now())
+  notes           String?
+  imageUrl        String?   // Đính kèm hóa đơn
+  isRecurring     Boolean   @default(false) // Giao dịch định kỳ
+  recurringPeriod String?   // monthly, weekly, yearly
+}
+
+// 5. Ngân sách (Budget)
+model Budget {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  amount      Decimal  @db.Decimal(15, 2)
+  period      String   // monthly, quarterly, yearly
+  startDate   DateTime
+  endDate     DateTime
+}
+
+// 6. Quản lý đầu tư (Vàng, Cổ phiếu, Quỹ, Crypto)
+model Investment {
+  id               Int       @id @default(autoincrement())
+  userId           Int
+  user             User      @relation(fields: [userId], references: [id])
+  symbol           String
+  assetType        String
+  subType          String?
+  quantity         Decimal
+  averageBuyPrice  Decimal
+  currentPrice     Decimal?
+  dividendReceived Decimal   @default(0)
+  targetProfitPct  Float?    @default(0)  // <-- CHẮC CHẮN PHẢI CÓ DÒNG NÀY
+  updatedAt        DateTime  @updatedAt
+  
+  @@map("investments") // (nếu có)
+}
+
+// 7. Gửi tiết kiệm
+model Saving {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankName      String
+  principal     Decimal   @db.Decimal(15, 2) // Số tiền gốc
+  interestRate  Decimal   @db.Decimal(5, 2)  // Lãi suất %/năm
+  termMonths    Int       // Kỳ hạn (tháng)
+  startDate     DateTime
+  maturityDate  DateTime  // Ngày đáo hạn
+  isSettled     Boolean   @default(false)
+}
+
+// 8. Quản lý nợ & Thẻ tín dụng
+model Debt {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          String    // loan (khoản vay), credit_card (thẻ tín dụng)
+  lender        String    // Chủ nợ / Ngân hàng cấp thẻ
+  totalAmount   Decimal   @db.Decimal(15, 2) // Khoản vay gốc hoặc Hạn mức thẻ
+  remainingDebt Decimal   @db.Decimal(15, 2) // Dư nợ còn lại
+  interestRate  Decimal   @default(0.00) @db.Decimal(5, 2)
+  dueDate       DateTime? // Ngày trả nợ hoặc Ngày sao kê/thanh toán thẻ
+}
+
+// 9. Mục tiêu tài chính
+model FinancialGoal {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String   // Mua xe, Mua nhà, Quỹ khẩn cấp...
+  targetAmount  Decimal  @db.Decimal(15, 2)
+  currentAmount Decimal  @default(0.00) @db.Decimal(15, 2)
+  deadline      DateTime?
+}
+
+
+// 10. Giao dịch định kỳ
+model RecurringTransaction {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  accountId Int      @map("account_id")
+  name      String
+  amount    Decimal  @db.Decimal(15, 2)
+  type      String   // "income" hoặc "expense"
+  frequency String   // "weekly", "monthly", "yearly"
+  nextDate  DateTime @map("next_date")
+  status    String   @default("active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("recurring_transactions")
+}
+
+//11.Bảng lưu trữ lịch sử mua Vàng
+model GoldTransaction {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  date      DateTime @default(now())
+  quantity  Float
+  unit      String
+  buyPrice  Float
+
+  // Ràng buộc khóa ngoại: Xóa User thì lịch sử cũng bị xóa theo
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
