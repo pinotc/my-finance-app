@@ -155,7 +155,7 @@ export default function InvestmentsPage() {
                 </div>
                 <div className="bg-sky-50/50 p-4 rounded-2xl border border-sky-100/50">
                   <p className="text-[11px] text-sky-600 font-bold uppercase tracking-wide mb-1">Giá hiện tại (Tiệm Mua Vào)</p>
-                  <p className="text-lg font-bold text-sky-700">
+                  <p className="text-lg font-bold text-sky-700"> 
                     {currentMarketPrice > 0 ? currentMarketPrice.toLocaleString('vi-VN') + ' đ/lượng' : '---'}
                   </p>
                 </div>
