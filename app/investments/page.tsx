@@ -109,10 +109,9 @@ export default function InvestmentsPage() {
   const targetSellingPrice = avgBuyPrice * (1 + targetMargin / 100);
 
   return (
-    <div className="flex-1 overflow-y-auto p-10 bg-slate-50 min-h-screen">
+    <div className="flex-1 overflow-y-auto p-4 md:p-10 pb-24 md:pb-10 bg-slate-50 min-h-screen">
       <div className="max-w-6xl mx-auto space-y-8">
-        
-        <header className="flex justify-between items-end bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+          <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-slate-100">
           <div>
             <h2 className="text-2xl font-bold text-slate-800">Quản lý Tài sản Vàng</h2>
             <p className="text-slate-500 text-sm mt-1 flex items-center gap-2">
@@ -161,21 +160,24 @@ export default function InvestmentsPage() {
                 </div>
               </div>
 
-              <div className="mt-6 pt-6 border-t border-slate-100 flex justify-between items-end">
+              <div className="mt-6 pt-6 border-t border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-end gap-5 md:gap-0">
+                {/* Khối Lời / Lỗ */}
                 <div>
                   <p className="text-sm text-slate-500 font-medium mb-1">Lời / Lỗ Realtime</p>
-                  <div className="flex items-baseline gap-3">
-                    <p className={`text-3xl font-black ${isProfit ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  <div className="flex flex-wrap items-baseline gap-2 md:gap-3">
+                    <p className={`text-2xl md:text-3xl font-black ${isProfit ? 'text-emerald-500' : 'text-rose-500'}`}>
                       {profitLoss > 0 ? '+' : ''}{profitLoss.toLocaleString('vi-VN')} đ
                     </p>
-                    <span className={`px-2.5 py-1 rounded-lg text-sm font-bold ${isProfit ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                    <span className={`px-2 py-1 rounded-lg text-xs md:text-sm font-bold ${isProfit ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
                       {isProfit ? '▲' : '▼'} {Math.abs(profitLossPercent).toFixed(2)}%
                     </span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm text-slate-500 font-medium mb-1">Giá trị hiện tại</p>
-                  <p className="text-2xl font-bold text-slate-800">{currentValue.toLocaleString('vi-VN')} đ</p>
+
+                {/* Khối Giá trị hiện tại */}
+                <div>
+                  <p className="text-sm text-slate-500 font-medium mb-1">Tổng Giá trị hiện tại</p>
+                  <p className="text-xl md:text-2xl font-bold text-slate-800">{currentValue.toLocaleString('vi-VN')} đ</p>
                 </div>
               </div>
             </div>
