@@ -1,5 +1,11 @@
 import { getBudgets, createBudget } from '../actions/budgetActions';
 
+// Mảng danh mục chi tiêu (giống hệt bên TransactionForm)
+const EXPENSE_CATEGORIES = [
+  "Tiền trọ / Nhà", "Ăn uống", "Xăng xe / Đi lại", "Mua sắm",
+  "Điện / Nước / Net / ĐT", "Sức khỏe, Làm đẹp", "Hiếu hỉ", "Khác"
+];
+
 export default async function BudgetsPage() {
   const budgets = await getBudgets();
 
@@ -18,17 +24,26 @@ export default async function BudgetsPage() {
           <div className="col-span-1 bg-white p-6 rounded-3xl shadow-sm border border-sky-50 sticky top-10">
             <h3 className="text-lg font-semibold mb-5 text-slate-800">Thiết lập hạn mức</h3>
             <form action={createBudget} className="space-y-4">
+              
+              {/* ĐÃ CHUYỂN THÀNH THẺ SELECT ĐỂ ĐỒNG BỘ DANH MỤC */}
               <div>
                 <label className="block text-sm text-slate-500 mb-1.5">Nhóm chi tiêu</label>
-                <input 
-                  type="text" name="categoryName" required placeholder="VD: Ăn uống, Đi lại..." 
+                <select 
+                  name="categoryName" 
+                  required 
                   className="w-full p-3 border border-sky-100 rounded-xl bg-slate-50/50 text-slate-800 font-medium text-sm focus:outline-none focus:border-sky-400"
-                />
+                >
+                  <option value="">-- Chọn hạng mục --</option>
+                  {EXPENSE_CATEGORIES.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
               </div>
+
               <div>
                 <label className="block text-sm text-slate-500 mb-1.5">Hạn mức / Tháng (VNĐ)</label>
                 <input 
-                  type="number" name="amount" required placeholder="VD: 5000000"
+                  type="number" name="amount" required placeholder="VD: 5000000" min="1000"
                   className="w-full p-3 border border-sky-100 rounded-xl bg-slate-50/50 text-slate-800 font-medium text-sm focus:outline-none focus:border-sky-400" 
                 />
               </div>
@@ -55,7 +70,10 @@ export default async function BudgetsPage() {
                   <div key={budget.id} className="bg-white p-6 rounded-3xl shadow-sm border border-sky-50">
                     <div className="flex justify-between items-end mb-3">
                       <div>
-                        <h4 className="font-semibold text-slate-700 text-lg">{budget.category.name}</h4>
+                        {/* Đảm bảo budget.category tồn tại trước khi render tên */}
+                        <h4 className="font-semibold text-slate-700 text-lg">
+                          {budget.category?.name || 'Danh mục không xác định'}
+                        </h4>
                         <p className="text-xs text-slate-500 mt-1">
                           Đã chi: <span className="font-medium text-slate-700">{new Intl.NumberFormat('vi-VN').format(budget.spent)} đ</span>
                         </p>
@@ -72,7 +90,7 @@ export default async function BudgetsPage() {
                     <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                       <div 
                         className={`h-2.5 rounded-full transition-all duration-500 ${progressColor}`} 
-                        style={{ width: `${budget.percent}%` }}
+                        style={{ width: `${Math.min(budget.percent, 100)}%` }} // Chặn % không vượt quá chiều dài thanh
                       ></div>
                     </div>
                     <div className="mt-2 text-right">
@@ -83,7 +101,6 @@ export default async function BudgetsPage() {
               })
             )}
           </div>
-
         </div>
       </div>
     </div>

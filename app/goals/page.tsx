@@ -1,7 +1,11 @@
 import { getGoals, createGoal, fundGoal } from '../actions/goalActions';
+import { prisma } from '@/lib/prisma';
 
 export default async function GoalsPage() {
   const goals = await getGoals();
+  const userId = 1;
+  const investments = await prisma.investment.findMany({ where: { userId } });
+  const totalInvested = investments.reduce((sum, inv) => sum + (Number(inv.quantity) * Number(inv.averageBuyPrice)), 0);
 
   return (
     <div className="flex-1 overflow-y-auto p-10 bg-slate-50">

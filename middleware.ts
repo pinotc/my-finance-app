@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function proxy(request: NextRequest) {
+// BẮT BUỘC PHẢI TÊN LÀ "middleware", KHÔNG ĐƯỢC ĐỔI
+export function middleware(request: NextRequest) {
   // Lấy cookie phiên đăng nhập
   const sessionId = request.cookies.get('session_user_id')?.value;
   const { pathname } = request.nextUrl;
@@ -24,7 +25,7 @@ export function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Cấu hình để proxy không chặn các file tĩnh (hình ảnh, css, api...)
+// Cấu hình để middleware không chặn các file tĩnh (hình ảnh, css, api...)
 export const config = {
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };

@@ -30,10 +30,12 @@ export async function getBudgets(userId: number = 1) {
 
       const spent = Number(transactions._sum.amount || 0);
       return {
-        ...budget,
+        id: budget.id,
+        amount: Number(budget.amount),
+        category: budget.category,
         spent,
         remaining: Number(budget.amount) - spent,
-        percent: Math.min(Math.round((spent / Number(budget.amount)) * 100), 100)
+        percent: Math.min(Math.round((spent / Number(budget.amount)) * 100), 100) // Tính phần trăm (tối đa 100% cho progress bar)
       };
     }));
 
@@ -44,7 +46,7 @@ export async function getBudgets(userId: number = 1) {
   }
 }
 
-// 2. Tạo ngân sách mới (Tự động tạo danh mục nếu chưa có)
+// 2. Tạo ngân sách mới (Đồng bộ ID danh mục với Transaction)
 export async function createBudget(formData: FormData) {
   const categoryName = formData.get('categoryName') as string;
   const amount = parseFloat(formData.get('amount') as string);
@@ -53,28 +55,37 @@ export async function createBudget(formData: FormData) {
   if (!categoryName || isNaN(amount) || amount <= 0) return;
 
   try {
-    // Tìm hoặc tạo danh mục
-    let category = await prisma.category.findFirst({
-      where: { name: categoryName, userId }
-    });
-
-    if (!category) {
-      category = await prisma.category.create({
-        data: { name: categoryName, type: 'expense', userId }
+    await prisma.$transaction(async (tx) => {
+      // TÌM HOẶC TẠO DANH MỤC: Bỏ qua userId để khớp 100% với luồng Giao dịch
+      let category = await tx.category.findFirst({
+        where: { 
+          name: categoryName,
+          type: 'expense' 
+        }
       });
-    }
 
-    // Tạo thiết lập ngân sách tháng
-    const now = new Date();
-    await prisma.budget.create({
-      data: {
-        userId,
-        categoryId: category.id,
-        amount,
-        period: 'monthly',
-        startDate: new Date(now.getFullYear(), now.getMonth(), 1),
-        endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0),
+      if (!category) {
+        category = await tx.category.create({
+          data: { 
+            name: categoryName, 
+            type: 'expense', 
+            userId // Khi tạo mới thì lưu userId vào để biết ai tạo
+          }
+        });
       }
+
+      // Tạo thiết lập ngân sách tháng
+      const now = new Date();
+      await tx.budget.create({
+        data: {
+          userId,
+          categoryId: category.id,
+          amount,
+          period: 'monthly',
+          startDate: new Date(now.getFullYear(), now.getMonth(), 1),
+          endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0),
+        }
+      });
     });
 
     revalidatePath('/budgets');
